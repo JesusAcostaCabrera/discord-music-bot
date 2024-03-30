@@ -10,6 +10,7 @@ const { discord_token: token } = require('../config.json')
 const client = new Client({ intents: [GatewayIntentBits.Guilds] })
 
 client.commands = new Collection()
+client.cooldowns = new Collection()
 
 // Accesing src/commands
 const foldersPath = path.join(__dirname, 'commands')
@@ -47,6 +48,7 @@ client.once(Events.ClientReady, readyClient => {
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return
+  const { cooldowns } = interaction.client
   // Getting command functionalities
   const command = interaction.client.commands.get(interaction.commandName)
 
@@ -54,6 +56,30 @@ client.on(Events.InteractionCreate, async interaction => {
     console.log(`No command matching ${interaction.commandName} was found.`)
     return
   }
+
+  if (!cooldowns.has(command.data.name)) {
+    cooldowns.set(command.data.name, new Collection())
+  }
+
+  const now = Date.now() // IT'S A FUNCTION BROOO
+  const timestamps = cooldowns.get(command.data.name)
+  const defaultCooldownDuration = 3
+  const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1_000
+
+  if (timestamps.has(interaction.user_id)) {
+    const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount
+
+    if (now < expirationTime) {
+      const expiredTimestamp = Math.round(expirationTime / 1_000)
+      return interaction.reply({
+        content: `Please wait, you are on cooldown for ${command.data.name}. You can use it again in <t:${expiredTimestamp}:R>`,
+        ephemeral: true
+      })
+    }
+  }
+  timestamps.set(interaction.user.id, now)
+
+  setTimeout(() => delete(interaction.user.id), cooldownAmount)
 
   try {
     await command.execute(interaction)
