@@ -7,6 +7,7 @@ const secretPong = {
     .setDescription('It does something secret'),
   async execute (interaction) {
     await interaction.reply({content:'Secreeet',ephemeral: true})
+    await interaction.followUp('Something secret happened')
   }
 }
 
