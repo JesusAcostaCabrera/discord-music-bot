@@ -42,33 +42,46 @@ for (const folder of commandFolders) {
   }
 }
 
+// Logs in to discord bot
 client.once(Events.ClientReady, readyClient => {
   console.log(`Ready! logged in as ${readyClient.user.tag}`)
 })
 
+// Whenever you call a discord command
 client.on(Events.InteractionCreate, async interaction => {
+  // If it is not interacting with the bot, do nothing
   if (!interaction.isChatInputCommand()) return
+
+  // cooldown from the client
   const { cooldowns } = interaction.client
   // Getting command functionalities
   const command = interaction.client.commands.get(interaction.commandName)
 
+  // If the command doesn't exist
   if (!command) {
     console.log(`No command matching ${interaction.commandName} was found.`)
     return
   }
 
+  // If cooldown doesn't have the specified cooldown amount for the command
   if (!cooldowns.has(command.data.name)) {
     cooldowns.set(command.data.name, new Collection())
   }
 
+  // Date right now
   const now = Date.now() // IT'S A FUNCTION BROOO
+  // Obtain timestamps of the command used
   const timestamps = cooldowns.get(command.data.name)
+  // 3 seconds default cooldown
   const defaultCooldownDuration = 3
+  // Checks if command has cooldown, if not the cooldown is 3 seconds
   const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1_000
 
+  // if a user already used the command
   if (timestamps.has(interaction.user_id)) {
     const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount
 
+    // User used it more times than recommended
     if (now < expirationTime) {
       const expiredTimestamp = Math.round(expirationTime / 1_000)
       return interaction.reply({
@@ -77,8 +90,10 @@ client.on(Events.InteractionCreate, async interaction => {
       })
     }
   }
+  // Creates timestamp with user that used the command
   timestamps.set(interaction.user.id, now)
 
+  // Deletes the timestamp after the time has passed
   setTimeout(() => delete(interaction.user.id), cooldownAmount)
 
   try {
