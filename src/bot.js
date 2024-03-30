@@ -94,7 +94,7 @@ client.on(Events.InteractionCreate, async interaction => {
   timestamps.set(interaction.user.id, now)
 
   // Deletes the timestamp after the time has passed
-  setTimeout(() => delete(interaction.user.id), cooldownAmount)
+  setTimeout(() => delete interaction.user.id, cooldownAmount)
 
   try {
     await command.execute(interaction)
